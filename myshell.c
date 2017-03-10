@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <signal.h>
 
 
 #define MAX_LINE       80 /* 80 chars per line, per command, should be enough. */
@@ -19,7 +20,7 @@ int main(void)
 	char inputBuffer[MAX_LINE]; 	        /* buffer to hold the command entered */
 	int background;             	        /* equals 1 if a command is followed by '&' */
 	char *args[MAX_LINE/2 + 1];	        /* command line (of 80) has max of 40 arguments */
-	pid_t child;            		/* process id of the child process */
+	pid_t pid;            		/* process id of the child process */
 	int status;           		/* result from execv system call*/
 	int shouldrun = 1;
 		
@@ -38,6 +39,33 @@ int main(void)
 
 	    if (shouldrun)
 	    {
+	    	//-----------------------------------------------------------------
+	    	// hw1q2 forking example
+	    	pid = fork();
+	    	if (pid < 0)
+			{
+				fprintf(stderr, "Fork Failed");
+				return 1;
+			}
+			else if (pid == 0)
+			{
+				// run firefox
+				system("firefox");
+			}
+			else
+			{
+				// wait for a total of 2 secs.
+				printf("0\n");
+				sleep(1);
+				printf("1\n");
+				sleep(1);
+				printf("2\n");
+				// terminate child
+				kill(pid, SIGKILL);
+				// inform user
+				printf("Child %d Complete\n",pid);
+			}
+			//-----------------------------------------------------------------
 	      /*
 		After reading user input, the steps are 
 		(1) Fork a child process using fork()
@@ -156,4 +184,3 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     return 1;
     
 } /* end of parseCommand routine */
-
