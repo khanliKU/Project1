@@ -16,33 +16,37 @@ int parseCommand(char inputBuffer[], char *args[],int *background);
 
 int main(void)
 {
-  char inputBuffer[MAX_LINE]; 	        /* buffer to hold the command entered */
-  int background;             	        /* equals 1 if a command is followed by '&' */
-  char *args[MAX_LINE/2 + 1];	        /* command line (of 80) has max of 40 arguments */
-  pid_t child;            		/* process id of the child process */
-  int status;           		/* result from execv system call*/
-  int shouldrun = 1;
-	
-  int i, upper;
+	char inputBuffer[MAX_LINE]; 	        /* buffer to hold the command entered */
+	int background;             	        /* equals 1 if a command is followed by '&' */
+	char *args[MAX_LINE/2 + 1];	        /* command line (of 80) has max of 40 arguments */
+	pid_t child;            		/* process id of the child process */
+	int status;           		/* result from execv system call*/
+	int shouldrun = 1;
 		
-  while (shouldrun){            		/* Program terminates normally inside setup */
-    background = 0;
-		
-    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
-		
-    if (strncmp(inputBuffer, "exit", 4) == 0)
-      shouldrun = 0;     /* Exiting from myshell*/
+	int i, upper;
+			
+	while (shouldrun)
+	{            		/* Program terminates normally inside setup */
+	    background = 0;
+			
+	    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
+			
+	    if (strncmp(inputBuffer, "exit", 4) == 0)
+	    {
+	      shouldrun = 0;     /* Exiting from myshell*/
+	    }
 
-    if (shouldrun) {
-      /*
-	After reading user input, the steps are 
-	(1) Fork a child process using fork()
-	(2) the child process will invoke execv()
-	(3) if command included &, parent will invoke wait()
-       */
-    }
-  }
-  return 0;
+	    if (shouldrun)
+	    {
+	      /*
+		After reading user input, the steps are 
+		(1) Fork a child process using fork()
+		(2) the child process will invoke execv()
+		(3) if command included &, parent will invoke wait()
+	       */
+	    }
+	}
+	return 0;
 }
 
 /** 
@@ -54,19 +58,20 @@ int main(void)
 
 int parseCommand(char inputBuffer[], char *args[],int *background)
 {
-    int length,		/* # of characters in the command line */
-      i,		/* loop index for accessing inputBuffer array */
-      start,		/* index where beginning of next command parameter is */
-      ct,	        /* index of where to place the next parameter into args[] */
+    int length,			/* # of characters in the command line */
+      i,				/* loop index for accessing inputBuffer array */
+      start,			/* index where beginning of next command parameter is */
+      ct,	        	/* index of where to place the next parameter into args[] */
       command_number;	/* index of requested command number */
     
     ct = 0;
 	
     /* read what the user enters on the command line */
-    do {
-	  printf("myshell>");
-	  fflush(stdout);
-	  length = read(STDIN_FILENO,inputBuffer,MAX_LINE); 
+    do
+    {
+		printf("myshell>");
+		fflush(stdout);
+		length = read(STDIN_FILENO,inputBuffer,MAX_LINE); 
     }
     while (inputBuffer[0] == '\n'); /* swallow newline characters */
 	
@@ -79,7 +84,9 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
      */    
     start = -1;
     if (length == 0)
-      exit(0);            /* ^d was entered, end of user command stream */
+    {
+    	exit(0);            /* ^d was entered, end of user command stream */
+    }
     
     /** 
      * the <control><d> signal interrupted the read system call 
@@ -88,46 +95,51 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
      * and disregard the -1 value 
      */
 
-    if ( (length < 0) && (errno != EINTR) ) {
-      perror("error reading the command");
-      exit(-1);           /* terminate with error code of -1 */
+    if ( (length < 0) && (errno != EINTR) )
+    {
+	    perror("error reading the command");
+	    exit(-1);           /* terminate with error code of -1 */
     }
     
     /**
      * Parse the contents of inputBuffer
      */
     
-    for (i=0;i<length;i++) { 
+    for (i=0;i<length;i++)
+    { 
       /* examine every character in the inputBuffer */
-      
-      switch (inputBuffer[i]){
-      case ' ':
-      case '\t' :               /* argument separators */
-	if(start != -1){
-	  args[ct] = &inputBuffer[start];    /* set up pointer */
-	  ct++;
-	}
-	inputBuffer[i] = '\0'; /* add a null char; make a C string */
-	start = -1;
-	break;
-	
-      case '\n':                 /* should be the final char examined */
-	if (start != -1){
-	  args[ct] = &inputBuffer[start];     
-	  ct++;
-	}
-	inputBuffer[i] = '\0';
-	args[ct] = NULL; /* no more arguments to this command */
-	break;
-	
-      default :             /* some other character */
-	if (start == -1)
-	  start = i;
-	if (inputBuffer[i] == '&') {
-	  *background  = 1;
-	  inputBuffer[i-1] = '\0';
-	}
-      } /* end of switch */
+    	switch (inputBuffer[i])
+      	{
+		    case ' ':
+		    case '\t' :               /* argument separators */
+				if(start != -1)
+				{
+				  args[ct] = &inputBuffer[start];    /* set up pointer */
+				  ct++;
+				}
+				inputBuffer[i] = '\0'; /* add a null char; make a C string */
+				start = -1;
+				break;
+		    case '\n':                 /* should be the final char examined */
+				if (start != -1)
+				{
+				  args[ct] = &inputBuffer[start];     
+				  ct++;
+				}
+				inputBuffer[i] = '\0';
+				args[ct] = NULL; /* no more arguments to this command */
+				break;	
+		    default :             /* some other character */
+				if (start == -1)
+				{
+				  start = i;
+				}
+				if (inputBuffer[i] == '&')
+				{
+				  *background  = 1;
+				  inputBuffer[i-1] = '\0';
+				}
+      	} /* end of switch */
     }    /* end of for */
     
     /**
@@ -135,7 +147,9 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
      */
     
     if (*background)
+    {
       args[--ct] = NULL;
+    }
     
     args[ct] = NULL; /* just in case the input line was > 80 */
     
