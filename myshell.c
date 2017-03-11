@@ -11,7 +11,8 @@
 #include <signal.h>
 
 #define MAX_LINE       	80 /* 80 chars per line, per command, should be enough. */
-#define MAX_PATH		20
+#define MAX_PATH_NO		20
+#define MAX_PAT_LENGTH  200
 
 int parseCommand(char inputBuffer[], char *args[],int *background);
 
@@ -27,16 +28,17 @@ int main(void)
 	int i, upper;
 
 	char* pathEV = getenv("PATH");
-	char* paths[MAX_PATH];
+	char* paths[MAX_PATH_NO];
 	char* token;
-	char path[MAX_LINE];
+	char path[MAX_PAT_LENGTH];
+	char cwd[MAX_PAT_LENGTH];
 	int success = 0;
    
    /* get the first token */
 
    	token = strtok(pathEV, ":");
-   	paths[0] = token;
-   	int pathLenght = 1;
+   	paths[1] = token;
+   	int pathLenght = 2;
    /* walk through other tokens */
    	while( token != NULL ) 
    	{
@@ -48,16 +50,21 @@ int main(void)
     		pathLenght++;
     	}
    	}
-
+/*
    	for (int i=0;i<pathLenght;i++)
    	{
    		printf( " %s\n", paths[i] );
    	}
-
+*/
 	while (shouldrun)
 	{            		/* Program terminates normally inside setup */
 	    background = 0;
 		int result;
+
+		memset(cwd,'\0',sizeof(cwd));
+		getcwd(cwd,MAX_PAT_LENGTH);
+		printf("%s\n", cwd);
+		paths[0] = cwd;
 			
 	    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
 			
@@ -76,10 +83,10 @@ int main(void)
 	    	{
 	    		memset(path,'\0',sizeof(path));
 	    		strcpy(path,paths[pathIndex]);
-    			strncat(path,"/",MAX_LINE);
+    			strncat(path,"/",MAX_PAT_LENGTH);
 //				printf("%s\n", path);
 	    		strncat(path,args[0],MAX_LINE);
-	 	   		printf("%s\n", path);
+//	 	   		printf("%s\n", path);
 	    		char *const parmList[] = {path, NULL};
 	    		pid = fork();
 		    	if (pid < 0)
