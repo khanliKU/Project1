@@ -88,10 +88,20 @@ int main(void)
 	    	{
 	    		memset(path,'\0',sizeof(path));
 	    		strcpy(path,paths[pathIndex]);
-    			strncat(path,"/",MAX_PAT_LENGTH);
+    			strncat(path,"/",1);
 //				printf("%s\n", path);
 	    		strncat(path,args[0],MAX_LINE);
+//	    		args[0] = path;
 //	 	   		printf("%s\n", path);
+
+/*
+	    		int j = 0;
+	    		while (args[j] != NULL)
+    			{
+    				printf("%s\n", args[j]);
+    				j++;
+    			}
+*/
 	    		char *const parmList[] = {path, NULL};
 	    		pid = fork();
 		    	if (pid < 0)
@@ -102,7 +112,7 @@ int main(void)
 				else if (pid == 0)
 				{
 
-					success = execv(path, parmList);
+					success = execv(path, args);
 					if (success == -1)
 					{
 //						printf("error\n");
@@ -180,7 +190,7 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     /* read what the user enters on the command line */
     do
     {
-		printf("myshell>");
+		printf("myshell> ");
 		fflush(stdout);
 		length = read(STDIN_FILENO,inputBuffer,MAX_LINE); 
     }
@@ -263,7 +273,12 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     }
     
     args[ct] = NULL; /* just in case the input line was > 80 */
-    
+    /*
+    for (int j=0;j<ct;j++)
+    {
+    	printf("%s\n", args[j]);
+    }
+	*/
     return 1;
     
 } /* end of parseCommand routine */
