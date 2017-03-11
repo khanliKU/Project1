@@ -15,6 +15,10 @@
 #define MAX_PAT_LENGTH  200
 
 int parseCommand(char inputBuffer[], char *args[],int *background);
+void printPATH();
+
+char* paths[MAX_PATH_NO];
+int pathLenght;
 
 int main(void)
 {
@@ -28,7 +32,6 @@ int main(void)
 	int i, upper;
 
 	char* pathEV = getenv("PATH");
-	char* paths[MAX_PATH_NO];
 	char* token;
 	char path[MAX_PAT_LENGTH];
 	char cwd[MAX_PAT_LENGTH];
@@ -38,7 +41,7 @@ int main(void)
 
    	token = strtok(pathEV, ":");
    	paths[1] = token;
-   	int pathLenght = 2;
+   	pathLenght = 2;
    /* walk through other tokens */
    	while( token != NULL ) 
    	{
@@ -63,7 +66,6 @@ int main(void)
 
 		memset(cwd,'\0',sizeof(cwd));
 		getcwd(cwd,MAX_PAT_LENGTH);
-		printf("%s\n", cwd);
 		paths[0] = cwd;
 			
 	    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
@@ -77,7 +79,10 @@ int main(void)
 	    {
 	    	//-----------------------------------------------------------------
 	    	// hw1q2 forking example
-	    	
+	    	if (strcmp(args[0],"$PATH") == 0)
+	    	{
+	    		printPATH();
+	    	}
 	    	
 	    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
 	    	{
@@ -263,3 +268,10 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     
 } /* end of parseCommand routine */
 
+void printPATH()
+{
+	for (int i=0;i<pathLenght;i++)
+   	{
+   		printf( "%s\n", paths[i] );
+   	}
+}
