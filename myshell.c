@@ -10,8 +10,8 @@
 #include <string.h>
 #include <signal.h>
 
-
-#define MAX_LINE       80 /* 80 chars per line, per command, should be enough. */
+#define MAX_LINE       	80 /* 80 chars per line, per command, should be enough. */
+#define MAX_PATH		20
 
 int parseCommand(char inputBuffer[], char *args[],int *background);
 
@@ -25,10 +25,39 @@ int main(void)
 	int shouldrun = 1;
 		
 	int i, upper;
-			
+
+	char* pathEV = getenv("PATH");
+	char* paths[MAX_PATH];
+	char* token;
+	char path[MAX_LINE];
+	int success = 0;
+   
+   /* get the first token */
+
+   	token = strtok(pathEV, ":");
+   	paths[0] = token;
+   	int pathLenght = 1;
+   /* walk through other tokens */
+   	while( token != NULL ) 
+   	{
+//    	printf( " %s\n", token );
+    	token = strtok(NULL, ":");
+    	if (token != NULL)
+    	{
+    		paths[pathLenght] = token;
+    		pathLenght++;
+    	}
+   	}
+
+   	for (int i=0;i<pathLenght;i++)
+   	{
+   		printf( " %s\n", paths[i] );
+   	}
+
 	while (shouldrun)
 	{            		/* Program terminates normally inside setup */
 	    background = 0;
+		int result;
 			
 	    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
 			
@@ -41,6 +70,46 @@ int main(void)
 	    {
 	    	//-----------------------------------------------------------------
 	    	// hw1q2 forking example
+	    	
+	    	
+	    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
+	    	{
+	    		memset(path,'\0',sizeof(path));
+	    		strcpy(path,paths[pathIndex]);
+    			strncat(path,"/",MAX_LINE);
+//				printf("%s\n", path);
+	    		strncat(path,args[0],MAX_LINE);
+	 	   		printf("%s\n", path);
+	    		char *const parmList[] = {path, NULL};
+	    		pid = fork();
+		    	if (pid < 0)
+				{
+//					fprintf(stderr, "Fork Failed");
+					return 1;
+				}
+				else if (pid == 0)
+				{
+
+					success = execv(path, parmList);
+					if (success == -1)
+					{
+//						printf("error\n");
+					}
+					else
+					{
+						break;
+					}
+					exit(0);
+				}
+				else
+				{
+				// terminate child
+					wait(pid);
+					kill(pid, SIGKILL);
+				}
+			}
+	    	/*
+	    	char *const parmList[] = {"/bin/ls", "-l", "/bin", NULL};
 	    	pid = fork();
 	    	if (pid < 0)
 			{
@@ -50,21 +119,23 @@ int main(void)
 			else if (pid == 0)
 			{
 				// run firefox
+				/*
 				system("firefox");
+
+				result = execv("/bin/ls", parmList);
+				if (result == -1)
+				{
+					printf("error\n");
+				}
+//				exit(0);
 			}
 			else
 			{
-				// wait for a total of 2 secs.
-				printf("0\n");
-				sleep(1);
-				printf("1\n");
-				sleep(1);
-				printf("2\n");
 				// terminate child
+				wait(pid);
 				kill(pid, SIGKILL);
-				// inform user
-				printf("Child %d Complete\n",pid);
 			}
+			*/
 			//-----------------------------------------------------------------
 	      /*
 		After reading user input, the steps are 
@@ -184,3 +255,4 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     return 1;
     
 } /* end of parseCommand routine */
+
