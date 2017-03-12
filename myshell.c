@@ -78,10 +78,18 @@ int main(void)
 	    if (shouldrun)
 	    {
 	    	//-----------------------------------------------------------------
-	    	// hw1q2 forking example
+	    	// get contents of path file
 	    	if (strcmp(args[0],"$PATH") == 0)
 	    	{
 	    		printPATH();
+	    	}
+	    	// cd command implementation
+	    	if (strcmp(args[0],"cd") == 0)
+	    	{
+	    		if (chdir(args[1]) != 0 && args[1] != NULL)
+	    		{
+	    			printf("No such directory: %s\n", args[1]);
+	    		}
 	    	}
 	    	
 	    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
@@ -102,20 +110,6 @@ int main(void)
     				j++;
     			}
 */
-
-	    		/*
-TODO
-- custom case for ls and cd
-when cd is called change cwd aka paths[0]	
-when ls is called if there is no other arguments pass cwd to it
-cd /usr/....
-ls /usr/local....
-cd Project1/
-ls Project1/
-cd ..
-ls ..
-	    		*/
-	    		char *const parmList[] = {path, NULL};
 	    		pid = fork();
 		    	if (pid < 0)
 				{
