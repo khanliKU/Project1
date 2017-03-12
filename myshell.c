@@ -102,6 +102,19 @@ int main(void)
     				j++;
     			}
 */
+
+	    		/*
+TODO
+- custom case for ls and cd
+when cd is called change cwd aka paths[0]	
+when ls is called if there is no other arguments pass cwd to it
+cd /usr/....
+ls /usr/local....
+cd Project1/
+ls Project1/
+cd ..
+ls ..
+	    		*/
 	    		char *const parmList[] = {path, NULL};
 	    		pid = fork();
 		    	if (pid < 0)
