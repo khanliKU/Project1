@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <string.h>
 #include <signal.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #define MAX_LINE       	80 /* 80 chars per line, per command, should be enough. */
 #define MAX_PATH_NO		20
@@ -29,7 +31,7 @@ int main(void)
 	int status;           		/* result from execv system call*/
 	int shouldrun = 1;
 		
-	int i, upper;
+	int i, j, upper;
 
 	char* pathEV = getenv("PATH");
 	char* token;
@@ -37,6 +39,10 @@ int main(void)
 	char cwd[MAX_PAT_LENGTH];
 	int success = 0;
    
+	using_history();
+	register HIST_ENTRY **histList;
+	rl_readline_name = "myshell> ";
+
    /* get the first token */
 
    	token = strtok(pathEV, ":");
@@ -67,10 +73,11 @@ int main(void)
 		memset(cwd,'\0',sizeof(cwd));
 		getcwd(cwd,MAX_PAT_LENGTH);
 		paths[0] = cwd;
-			
-	    shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
-			
-	    if (strncmp(inputBuffer, "exit", 4) == 0)
+		do
+		{
+			shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
+		} while (!args[0]);
+	    if (strncmp(args[0], "exit", 4) == 0)
 	    {
 	      shouldrun = 0;     /* Exiting from myshell*/
 	    }
@@ -84,94 +91,59 @@ int main(void)
 	    		printPATH();
 	    	}
 	    	// cd command implementation
-	    	if (strcmp(args[0],"cd") == 0)
+	    	else if (strcmp(args[0],"cd") == 0)
 	    	{
 	    		if (chdir(args[1]) != 0 && args[1] != NULL)
 	    		{
 	    			printf("No such directory: %s\n", args[1]);
 	    		}
 	    	}
-	    	
-	    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
+		    else if (strncmp(args[0],"history",7) == 0)
+		    {
+		    	histList = history_list();
+	    		j = 0;
+	    		while (histList[j] != NULL)
+		    	{
+		    		printf("%s\n", histList[j]->line);
+	    			j++;
+	    		}
+	    	}
+	    	else
 	    	{
-	    		memset(path,'\0',sizeof(path));
-	    		strcpy(path,paths[pathIndex]);
-    			strncat(path,"/",1);
-//				printf("%s\n", path);
-	    		strncat(path,args[0],MAX_LINE);
-//	    		args[0] = path;
-//	 	   		printf("%s\n", path);
-
-/*
-	    		int j = 0;
-	    		while (args[j] != NULL)
-    			{
-    				printf("%s\n", args[j]);
-    				j++;
-    			}
-*/
-	    		pid = fork();
-		    	if (pid < 0)
-				{
-//					fprintf(stderr, "Fork Failed");
-					return 1;
-				}
-				else if (pid == 0)
-				{
-
-					success = execv(path, args);
-					if (success == -1)
+		    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
+		    	{
+		    		memset(path,'\0',sizeof(path));
+		    		strcpy(path,paths[pathIndex]);
+	    			strncat(path,"/",1);
+		    		strncat(path,args[0],MAX_LINE);
+		    		pid = fork();
+			    	if (pid < 0)
 					{
-//						printf("error\n");
+						fprintf(stderr, "Fork Failed");
+						return 1;
+					}
+					else if (pid == 0)
+					{
+
+						success = execv(path, args);
+						if (success == -1)
+						{
+//							printf("error\n");
+						}
+						else
+						{
+							break;
+						}
+						exit(0);
 					}
 					else
 					{
-						break;
+					// terminate child
+						wait(pid);
+						kill(pid, SIGKILL);
 					}
-					exit(0);
-				}
-				else
-				{
-				// terminate child
-					wait(pid);
-					kill(pid, SIGKILL);
 				}
 			}
-	    	/*
-	    	char *const parmList[] = {"/bin/ls", "-l", "/bin", NULL};
-	    	pid = fork();
-	    	if (pid < 0)
-			{
-				fprintf(stderr, "Fork Failed");
-				return 1;
-			}
-			else if (pid == 0)
-			{
-				// run firefox
-				/*
-				system("firefox");
-
-				result = execv("/bin/ls", parmList);
-				if (result == -1)
-				{
-					printf("error\n");
-				}
-//				exit(0);
-			}
-			else
-			{
-				// terminate child
-				wait(pid);
-				kill(pid, SIGKILL);
-			}
-			*/
-			//-----------------------------------------------------------------
-	      /*
-		After reading user input, the steps are 
-		(1) Fork a child process using fork()
-		(2) the child process will invoke execv()
-		(3) if command included &, parent will invoke wait()
-	       */
 	    }
 	}
 	return 0;
@@ -191,18 +163,24 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
       start,			/* index where beginning of next command parameter is */
       ct,	        	/* index of where to place the next parameter into args[] */
       command_number;	/* index of requested command number */
-    
+
+	char* token;
+
     ct = 0;
 	
     /* read what the user enters on the command line */
     do
     {
-		printf("myshell> ");
+//)		printf("myshell> ");
 		fflush(stdout);
-		length = read(STDIN_FILENO,inputBuffer,MAX_LINE); 
+		inputBuffer = readline("myshell> ");
+//		length = read(STDIN_FILENO,inputBuffer,MAX_LINE);
+		length = strlen(inputBuffer);
+//printf("%d\n", length);
     }
     while (inputBuffer[0] == '\n'); /* swallow newline characters */
 	
+	add_history(inputBuffer);
     /**
      *  0 is the system predefined file descriptor for stdin (standard input),
      *  which is the user's screen in this case. inputBuffer by itself is the
@@ -229,10 +207,20 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
 	    exit(-1);           /* terminate with error code of -1 */
     }
     
+    token = strtok(inputBuffer, " \t");
+   	ct = 0;
+   /* walk through other tokens */
+   	while( token != NULL ) 
+   	{
+    	args[ct] = token;
+    	ct++;
+    	token = strtok(NULL, " \t");
+   	}
+
     /**
      * Parse the contents of inputBuffer
      */
-    
+//printf("%d\n",ct);
     for (i=0;i<length;i++)
     { 
       /* examine every character in the inputBuffer */
@@ -273,7 +261,7 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     /**
      * If we get &, don't enter it in the args array
      */
-    
+
     if (*background)
     {
       args[--ct] = NULL;
@@ -286,6 +274,7 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     	printf("%s\n", args[j]);
     }
 	*/
+//printf("%s\n",inputBuffer);
     return 1;
     
 } /* end of parseCommand routine */
