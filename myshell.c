@@ -77,6 +77,7 @@ int main(void)
 		{
 			shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
 		} while (!args[0]);
+
 	    if (strncmp(args[0], "exit", 4) == 0)
 	    {
 	      shouldrun = 0;     /* Exiting from myshell*/
@@ -138,9 +139,11 @@ int main(void)
 					}
 					else
 					{
-					// terminate child
-						wait(pid);
-						kill(pid, SIGKILL);
+					// wait or background
+						if (!background)
+						{
+							wait(pid);
+						}
 					}
 				}
 			}
@@ -180,6 +183,12 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     }
     while (inputBuffer[0] == '\n'); /* swallow newline characters */
 	
+    if (inputBuffer[length-1] == '&')
+    {
+    	*background = 1;
+    	inputBuffer[length-1] = '\0';
+    }
+
 	add_history(inputBuffer);
     /**
      *  0 is the system predefined file descriptor for stdin (standard input),
@@ -261,12 +270,14 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     /**
      * If we get &, don't enter it in the args array
      */
-
+printf("TEST 1 %s\n", args[0]);
+/*
     if (*background)
     {
       args[--ct] = NULL;
     }
-    
+ */
+printf("TEST 2 %s\n", args[0]);
     args[ct] = NULL; /* just in case the input line was > 80 */
     /*
     for (int j=0;j<ct;j++)
