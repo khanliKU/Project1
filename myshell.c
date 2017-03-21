@@ -111,41 +111,42 @@ int main(void)
 	    	}
 	    	else
 	    	{
-		    	for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
-		    	{
-		    		memset(path,'\0',sizeof(path));
-		    		strcpy(path,paths[pathIndex]);
-	    			strncat(path,"/",1);
-		    		strncat(path,args[0],MAX_LINE);
-		    		pid = fork();
-			    	if (pid < 0)
-					{
-						fprintf(stderr, "Fork Failed");
-						return 1;
-					}
-					else if (pid == 0)
-					{
-
+		    	pid = fork();
+		    	if (pid < 0)
+				{
+					fprintf(stderr, "Fork Failed");
+					return 1;
+				}
+				else if (pid == 0)
+				{
+					for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
+			    	{
+			    		memset(path,'\0',sizeof(path));
+			    		strcpy(path,paths[pathIndex]);
+		    			strncat(path,"/",1);
+			    		strncat(path,args[0],MAX_LINE);
 						success = execv(path, args);
 						if (success == -1)
 						{
-//							printf("error\n");
+	//							printf("error\n");
 						}
 						else
 						{
 							break;
 						}
-						exit(0);
 					}
-					else
-					{
-					// wait or background
-						if (!background)
-						{
-							wait(pid);
-						}
-					}
+					exit(0);
 				}
+				else
+				{
+				// wait or background
+					if (!background)
+					{
+						wait(pid);
+					}
+					background = 0;
+				}
+		    	
 			}
 	    }
 	}
@@ -177,19 +178,21 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
 //)		printf("myshell> ");
 		fflush(stdout);
 		inputBuffer = readline("myshell> ");
+//		printf("%s", inputBuffer);
 //		length = read(STDIN_FILENO,inputBuffer,MAX_LINE);
 		length = strlen(inputBuffer);
 //printf("%d\n", length);
-    }
-    while (inputBuffer[0] == '\n'); /* swallow newline characters */
+    } while (!inputBuffer[0] || inputBuffer[0] == '\n'); /* swallow newline characters */
 	
+	add_history(inputBuffer);
+	
+	// get rid off &
     if (inputBuffer[length-1] == '&')
     {
     	*background = 1;
     	inputBuffer[length-1] = '\0';
     }
 
-	add_history(inputBuffer);
     /**
      *  0 is the system predefined file descriptor for stdin (standard input),
      *  which is the user's screen in this case. inputBuffer by itself is the
@@ -226,68 +229,8 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     	token = strtok(NULL, " \t");
    	}
 
-    /**
-     * Parse the contents of inputBuffer
-     */
-//printf("%d\n",ct);
-    for (i=0;i<length;i++)
-    { 
-      /* examine every character in the inputBuffer */
-    	switch (inputBuffer[i])
-      	{
-		    case ' ':
-		    case '\t' :               /* argument separators */
-				if(start != -1)
-				{
-				  args[ct] = &inputBuffer[start];    /* set up pointer */
-				  ct++;
-				}
-				inputBuffer[i] = '\0'; /* add a null char; make a C string */
-				start = -1;
-				break;
-		    case '\n':                 /* should be the final char examined */
-				if (start != -1)
-				{
-				  args[ct] = &inputBuffer[start];     
-				  ct++;
-				}
-				inputBuffer[i] = '\0';
-				args[ct] = NULL; /* no more arguments to this command */
-				break;	
-		    default :             /* some other character */
-				if (start == -1)
-				{
-				  start = i;
-				}
-				if (inputBuffer[i] == '&')
-				{
-				  *background  = 1;
-				  inputBuffer[i-1] = '\0';
-				}
-      	} /* end of switch */
-    }    /* end of for */
-    
-    /**
-     * If we get &, don't enter it in the args array
-     */
-printf("TEST 1 %s\n", args[0]);
-/*
-    if (*background)
-    {
-      args[--ct] = NULL;
-    }
- */
-printf("TEST 2 %s\n", args[0]);
     args[ct] = NULL; /* just in case the input line was > 80 */
-    /*
-    for (int j=0;j<ct;j++)
-    {
-    	printf("%s\n", args[j]);
-    }
-	*/
-//printf("%s\n",inputBuffer);
     return 1;
-    
 } /* end of parseCommand routine */
 
 void printPATH()
