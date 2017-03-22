@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <signal.h>
+#include <dirent.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -23,6 +24,8 @@ int parseCommand(char inputBuffer[],
 					int *argumentCount,
 					int *bookmark);
 void printPATH();
+void codeSearch(const char *name, int isRecursive, const char *searchFor);
+char *trimwhitespace(char *str);
 
 char* paths[MAX_PATH_NO];
 char* bookmarks[MAX_BOOKMARK] = {NULL};
@@ -45,8 +48,10 @@ int main(void)
 	char cwd[MAX_PAT_LENGTH];
 	int argumentCount;
 	int bookmark = -1;
-   
 	
+	const char* user = getenv("USER");
+
+	codeSearch(".",0,"NULL");
 
 	using_history();
 	register HIST_ENTRY **histList;
@@ -160,6 +165,20 @@ int main(void)
 	    				}
 	    			}
 //					printf("Bookmarks is full, can't insert.\n");
+	    		}
+	    	}
+	    	else if (strcmp(args[0],"codesearch") == 0)
+	    	{
+	    		if (args[1] != NULL)
+	    		{
+	    			if (strcmp(args[1],"-r") == 0 && args[2] != NULL)
+	    			{
+	    				codeSearch(".",1,args[2]);
+	    			}
+	    			else
+	    			{
+	    				codeSearch(".",0,args[1]);
+	    			}
 	    		}
 	    	}
 	    	else
@@ -289,4 +308,101 @@ void printPATH()
    	{
    		printf( "%s\n", paths[i] );
    	}
+}
+
+void codeSearch(const char *currentDir, int isRecursive, const char *searchFor)
+{
+    DIR *dir;
+    struct dirent *entry;
+    char* token;
+    char dummy[MAX_PAT_LENGTH];
+    char path[1024];
+    FILE* fp;
+    char line[MAX_LINE];
+    int lineNumber, lineStart = *line;
+
+    if (!(dir = opendir(currentDir)))
+        return;
+    if (!(entry = readdir(dir)))
+        return;
+
+    do
+    {
+    	int len = snprintf(path, sizeof(path)-1, "%s/%s", currentDir, entry->d_name);
+    	path[len] = 0;
+    	lineNumber = 1;
+//		printf("%s\n", path);
+    	// if its a dir
+        if (entry->d_type == DT_DIR)
+        {
+            if (strcmp(entry->d_name, ".") == 0 ||		// ignore "."
+            	strcmp(entry->d_name, "..") == 0 ||		// ignore ".."
+            	strcmp(entry->d_name, ".git") == 0)		// ignore ".git"
+                continue;
+            if (isRecursive)
+            {
+            	codeSearch(path, isRecursive, searchFor);
+            }
+			
+        }
+        // if its a file
+        else
+        {
+        	strcpy(dummy,entry->d_name);
+        	token = strtok(dummy,".");
+        	if (token != NULL)
+        	{
+        		token = strtok(NULL,".");
+        		if (token != NULL)
+	        	{
+	        		if (strcmp(token,"c") == 0 ||
+	        			strcmp(token,"C") == 0 ||
+	        			strcmp(token,"h") == 0 ||
+	        			strcmp(token,"H") == 0 ||
+	        			strcmp(token,"cpp") == 0 ||
+	        			strcmp(token,"c++") == 0)
+	        		{
+//						printf("%s\n", token);
+	        			fp = fopen(path,"r");
+	        			while(fgets(line,sizeof(line),fp))
+	        			{
+	        				if (strstr(line,searchFor) != NULL)
+	        				{
+	        					printf("%s -> %d: %s", path, lineNumber, trimwhitespace(line));
+	        					*line = lineStart;
+							}
+							lineNumber++;
+	        			}
+	        			fclose(fp);
+						
+	        		}
+	        	}
+        	}
+			
+        }
+    } while (entry = readdir(dir));
+    closedir(dir);
+}
+
+int isIndent(char c)
+{
+	if (c == ' ' || c == '\t')
+		return 1;
+	return 0;
+}
+
+char *trimwhitespace(char *str)
+{
+	char *end;
+	// Trim leading space
+	while(isIndent((unsigned char)*str)) str++;
+	// All spaces?
+	if(*str == 0)
+		return str;
+	// Trim trailing space
+	end = str + strlen(str) - 1;
+	while(end > str && isIndent((unsigned char)*end)) end--;
+	// Write new null terminator
+	*(end+1) = 0;
+	return str;
 }
