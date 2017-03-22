@@ -15,8 +15,9 @@
 #define MAX_LINE       	80 /* 80 chars per line, per command, should be enough. */
 #define MAX_PATH_NO		20
 #define MAX_PAT_LENGTH  200
+#define MAX_BOOKMARK	10
 
-int parseCommand(char inputBuffer[], char *args[],int *background);
+int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentCount);
 void printPATH();
 
 char* paths[MAX_PATH_NO];
@@ -37,8 +38,10 @@ int main(void)
 	char* token;
 	char path[MAX_PAT_LENGTH];
 	char cwd[MAX_PAT_LENGTH];
-	int success = 0;
+	int argumentCount;
    
+	char* bookmarks[MAX_BOOKMARK];
+
 	using_history();
 	register HIST_ENTRY **histList;
 	rl_readline_name = "myshell> ";
@@ -69,7 +72,7 @@ int main(void)
 		paths[0] = cwd;
 		do
 		{
-			shouldrun = parseCommand(inputBuffer,args,&background);       /* get next command */
+			shouldrun = parseCommand(inputBuffer,args,&background,&argumentCount);       /* get next command */
 		} while (!args[0]);
 
 	    if (strncmp(args[0], "exit", 4) == 0)
@@ -103,6 +106,10 @@ int main(void)
 	    			j++;
 	    		}
 	    	}
+	    	else if (strcmp(args[0],"bookmark") == 0)
+	    	{
+	    		/* code */
+	    	}
 	    	else
 	    	{
 		    	pid = fork();
@@ -120,7 +127,7 @@ int main(void)
 			    		strcpy(path,paths[pathIndex]);
 		    			strncat(path,"/",1);
 			    		strncat(path,args[0],MAX_LINE);
-						success = execv(path, args);
+						execv(path, args);
 					}
 					exit(0);
 				}
@@ -146,12 +153,14 @@ int main(void)
  * will become null-terminated, C-style strings. 
  */
 
-int parseCommand(char inputBuffer[], char *args[],int *background)
+int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentCount)
 {
     int length,			/* # of characters in the command line */
       ct;	        	/* index of where to place the next parameter into args[] */
 
 	char* token;
+	char* quoteToken;
+	char* arguments;
 
     ct = 0;
 	
@@ -190,16 +199,23 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
 	    exit(-1);           /* terminate with error code of -1 */
     }
     
-    token = strtok(inputBuffer, " \t");
+    arguments = strtok(inputBuffer,"\"");
+    quoteToken = strtok(NULL,"\"");
+    token = strtok(quoteToken, " ");
    	ct = 0;
    /* walk through other tokens */
    	while( token != NULL ) 
    	{
     	args[ct] = token;
     	ct++;
-    	token = strtok(NULL, " \t");
+    	token = strtok(NULL, " ");
    	}
-
+   	if (!quoteToken)
+   	{
+   		args[ct] = quoteToken;
+   		ct++;
+   	}
+   	*argumentCount = ct;
     args[ct] = NULL; /* just in case the input line was > 80 */
     return 1;
 } /* end of parseCommand routine */
