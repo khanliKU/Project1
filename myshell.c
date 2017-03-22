@@ -17,10 +17,15 @@
 #define MAX_PAT_LENGTH  200
 #define MAX_BOOKMARK	10
 
-int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentCount);
+int parseCommand(char inputBuffer[],
+					char *args[],
+					int *background,
+					int *argumentCount,
+					int *bookmark);
 void printPATH();
 
 char* paths[MAX_PATH_NO];
+char* bookmarks[MAX_BOOKMARK] = {NULL};
 int pathLenght;
 
 int main(void)
@@ -39,8 +44,9 @@ int main(void)
 	char path[MAX_PAT_LENGTH];
 	char cwd[MAX_PAT_LENGTH];
 	int argumentCount;
+	int bookmark = -1;
    
-	char* bookmarks[MAX_BOOKMARK];
+	
 
 	using_history();
 	register HIST_ENTRY **histList;
@@ -72,7 +78,11 @@ int main(void)
 		paths[0] = cwd;
 		do
 		{
-			shouldrun = parseCommand(inputBuffer,args,&background,&argumentCount);       /* get next command */
+			shouldrun = parseCommand(inputBuffer,
+										args,
+										&background,
+										&argumentCount,
+										&bookmark);       /* get next command */
 		} while (!args[0]);
 
 	    if (strncmp(args[0], "exit", 4) == 0)
@@ -106,9 +116,51 @@ int main(void)
 	    			j++;
 	    		}
 	    	}
-	    	else if (strcmp(args[0],"bookmark") == 0)
+	    	else if (strcmp(args[0],"bookmark") == 0 && argumentCount > 1)
 	    	{
-	    		/* code */
+	    		// list bookmarks
+	    		if (strcmp(args[1],"-l") == 0)
+	    		{
+	    			for (int k = 0; k < MAX_BOOKMARK; k++)
+	    			{
+	    				if (bookmarks[k] == NULL)
+	    				{
+	    					break;
+	    				}
+	    				printf("%d: %s\n",k, bookmarks[k]);
+	    			}
+	    		}
+	    		// execute at index
+	    		else if (strcmp(args[1],"-i") == 0 && argumentCount > 2)
+	    		{
+	    			j = atoi(args[2]);
+	    			if (j >= 0 && j < MAX_BOOKMARK && bookmarks[j] != NULL)
+					{
+						bookmark = j;
+					}
+	    		}
+	    		// delete at index
+	    		else if (strcmp(args[1],"-d") == 0 && argumentCount > 2)
+	    		{
+	    			j = atoi(args[2]);
+					if (j >= 0 && j < MAX_BOOKMARK)
+					{
+						bookmarks[j] = NULL;
+					}
+				}
+				// inser bookmark
+	    		else
+	    		{
+	    			for (int k = 0; k < MAX_BOOKMARK; k++)
+	    			{
+	    				if (bookmarks[k] == NULL)
+	    				{
+	    					bookmarks[k] = args[1];
+	    					break;
+	    				}
+	    			}
+//					printf("Bookmarks is full, can't insert.\n");
+	    		}
 	    	}
 	    	else
 	    	{
@@ -153,7 +205,11 @@ int main(void)
  * will become null-terminated, C-style strings. 
  */
 
-int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentCount)
+int parseCommand(char inputBuffer[],
+					char *args[],
+					int *background,
+					int *argumentCount,
+					int *bookmark)
 {
     int length,			/* # of characters in the command line */
       ct;	        	/* index of where to place the next parameter into args[] */
@@ -165,14 +221,21 @@ int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentC
     ct = 0;
 	
     /* read what the user enters on the command line */
-    do
+    if (*bookmark == -1)
     {
-		fflush(stdout);
-		inputBuffer = readline("myshell> ");
-		length = strlen(inputBuffer);
-    } while (!inputBuffer[0] || inputBuffer[0] == '\n'); /* swallow newline characters */
+		do
+		{
+			inputBuffer = readline("myshell> ");
+		} while (!inputBuffer[0] || inputBuffer[0] == '\n'); /* swallow newline characters */
+		add_history(inputBuffer);
+    }
+    else
+    {
+    	strcpy(inputBuffer, bookmarks[*bookmark]);
+    	*bookmark = -1;
+    }
 	
-	add_history(inputBuffer);
+	length = strlen(inputBuffer);
 	
 	// get rid off &
     if (inputBuffer[length-1] == '&')
@@ -199,9 +262,9 @@ int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentC
 	    exit(-1);           /* terminate with error code of -1 */
     }
     
-    arguments = strtok(inputBuffer,"\"");
-    quoteToken = strtok(NULL,"\"");
-    token = strtok(quoteToken, " ");
+	arguments = strtok(inputBuffer,"\"");
+	quoteToken = strtok(NULL,"\"");
+    token = strtok(arguments, " ");
    	ct = 0;
    /* walk through other tokens */
    	while( token != NULL ) 
@@ -210,7 +273,7 @@ int parseCommand(char inputBuffer[], char *args[],int *background,int *argumentC
     	ct++;
     	token = strtok(NULL, " ");
    	}
-   	if (!quoteToken)
+   	if (quoteToken != NULL)
    	{
    		args[ct] = quoteToken;
    		ct++;
