@@ -44,14 +44,13 @@ int main(void)
 	rl_readline_name = "myshell> ";
 
    /* get the first token */
-
    	token = strtok(pathEV, ":");
    	paths[1] = token;
    	pathLenght = 2;
+
    /* walk through other tokens */
    	while( token != NULL ) 
    	{
-//    	printf( " %s\n", token );
     	token = strtok(NULL, ":");
     	if (token != NULL)
     	{
@@ -59,12 +58,7 @@ int main(void)
     		pathLenght++;
     	}
    	}
-/*
-   	for (int i=0;i<pathLenght;i++)
-   	{
-   		printf( " %s\n", paths[i] );
-   	}
-*/
+
 	while (shouldrun)
 	{            		/* Program terminates normally inside setup */
 	    background = 0;
@@ -121,19 +115,12 @@ int main(void)
 				{
 					for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
 			    	{
+			    		setpgid(0,0);
 			    		memset(path,'\0',sizeof(path));
 			    		strcpy(path,paths[pathIndex]);
 		    			strncat(path,"/",1);
 			    		strncat(path,args[0],MAX_LINE);
 						success = execv(path, args);
-						if (success == -1)
-						{
-	//							printf("error\n");
-						}
-						else
-						{
-							break;
-						}
 					}
 					exit(0);
 				}
@@ -142,11 +129,10 @@ int main(void)
 				// wait or background
 					if (!background)
 					{
-						wait(pid);
+						waitpid(pid);
 					}
 					background = 0;
 				}
-		    	
 			}
 	    }
 	}
@@ -163,10 +149,7 @@ int main(void)
 int parseCommand(char inputBuffer[], char *args[],int *background)
 {
     int length,			/* # of characters in the command line */
-      i,				/* loop index for accessing inputBuffer array */
-      start,			/* index where beginning of next command parameter is */
-      ct,	        	/* index of where to place the next parameter into args[] */
-      command_number;	/* index of requested command number */
+      ct;	        	/* index of where to place the next parameter into args[] */
 
 	char* token;
 
@@ -175,13 +158,9 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     /* read what the user enters on the command line */
     do
     {
-//)		printf("myshell> ");
 		fflush(stdout);
 		inputBuffer = readline("myshell> ");
-//		printf("%s", inputBuffer);
-//		length = read(STDIN_FILENO,inputBuffer,MAX_LINE);
 		length = strlen(inputBuffer);
-//printf("%d\n", length);
     } while (!inputBuffer[0] || inputBuffer[0] == '\n'); /* swallow newline characters */
 	
 	add_history(inputBuffer);
@@ -193,14 +172,6 @@ int parseCommand(char inputBuffer[], char *args[],int *background)
     	inputBuffer[length-1] = '\0';
     }
 
-    /**
-     *  0 is the system predefined file descriptor for stdin (standard input),
-     *  which is the user's screen in this case. inputBuffer by itself is the
-     *  same as &inputBuffer[0], i.e. the starting address of where to store
-     *  the command that is read, and length holds the number of characters
-     *  read in. inputBuffer is not a null terminated C-string. 
-     */    
-    start = -1;
     if (length == 0)
     {
     	exit(0);            /* ^d was entered, end of user command stream */
