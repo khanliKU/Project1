@@ -1,1 +1,0 @@
-cmd_/home/kutlay/Comp304/Project1/mymodule.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/kutlay/Comp304/Project1/mymodule.ko /home/kutlay/Comp304/Project1/mymodule.o /home/kutlay/Comp304/Project1/mymodule.mod.o
