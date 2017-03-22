@@ -150,5 +150,5 @@ MODULE_AUTHOR("Kutlay Hanli");
 /*
  * sudo insmod ...
  * sudo rmmod ...
- * dmesg
+ * sudo dmesg -c
  */

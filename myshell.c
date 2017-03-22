@@ -51,8 +51,6 @@ int main(void)
 	
 	const char* user = getenv("USER");
 
-	codeSearch(".",0,"NULL");
-
 	using_history();
 	register HIST_ENTRY **histList;
 	rl_readline_name = "myshell> ";
