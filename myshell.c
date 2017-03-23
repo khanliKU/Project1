@@ -26,6 +26,7 @@ int parseCommand(char inputBuffer[],
 void printPATH();
 void codeSearch(const char *name, int isRecursive, const char *searchFor);
 char *trimwhitespace(char *str);
+int removeModule();
 
 char* paths[MAX_PATH_NO];
 char* bookmarks[MAX_BOOKMARK] = {NULL};
@@ -48,7 +49,8 @@ int main(void)
 	char cwd[MAX_PAT_LENGTH];
 	int argumentCount;
 	int bookmark = -1;
-	
+	char currentPID[10] = " ";
+
 	const char* user = getenv("USER");
 
 	using_history();
@@ -91,6 +93,7 @@ int main(void)
 	    if (strncmp(args[0], "exit", 4) == 0)
 	    {
 	      shouldrun = 0;     /* Exiting from myshell*/
+//	    	removeModule();
 	    }
 
 	    if (shouldrun)
@@ -191,18 +194,28 @@ int main(void)
 					}
 					else if (pid == 0)
 					{
-						char dum1[50] = "processID=";
-						char dum2[50] = "processPrio=";
-						strcat(dum1,args[1]);
-						strcat(dum2,args[2]);
-						args[0] = "/usr/bin/sudo";
-						args[1] = "insmod";
-						args[2] = "processInfo.ko";
-						args[3] = dum1;
-						args[4] = dum2;
-						args[5] = NULL;
-						execv(args[0], args);
-						exit(0);
+						if (strcmp(currentPID,args[1]) != 0)
+						{
+							if (strcmp(currentPID," ") != 0)
+							{
+								removeModule();
+							}
+							memset(currentPID,'\0',sizeof(currentPID));
+							strcpy(currentPID,args[1]);
+							char dum1[50] = "processID=";
+							char dum2[50] = "processPrio=";
+							strcat(dum1,args[1]);
+							strcat(dum2,args[2]);
+							args[0] = "/usr/bin/sudo";
+							args[1] = "insmod";
+							args[2] = "processInfo.ko";
+							args[3] = dum1;
+							args[4] = dum2;
+							args[5] = NULL;
+							execv(args[0], args);
+							exit(0);
+						}
+						
 					}
 					else
 					{
@@ -243,6 +256,8 @@ int main(void)
 			}
 	    }
 	}
+	// TODO remove any added module while exiting
+	removeModule();
 	return 0;
 }
 
@@ -434,4 +449,24 @@ char *trimwhitespace(char *str)
 	// Write new null terminator
 	*(end+1) = 0;
 	return str;
+}
+
+int removeModule()
+{
+	int pid = fork();
+	char* args[4] = {"/usr/bin/sudo","rmmod","processInfo",NULL};
+	if (pid < 0)
+	{
+		fprintf(stderr, "Fork Failed");
+		return 1;
+	}
+	else if (pid == 0)
+	{
+		execv(args[0],args);
+	}
+	else
+	{
+		waitpid(pid);
+	}
+	return 0;
 }
