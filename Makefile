@@ -1,4 +1,4 @@
-obj-m += mymodule.o
+obj-m += processInfo.o
 
 myshell: myshell.c
 	gcc -o myshell myshell.c -lreadline

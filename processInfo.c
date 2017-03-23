@@ -7,7 +7,9 @@
 #include <linux/fs.h>
 #include <linux/path.h>
 #include <linux/namei.h>
+#include <linux/sched.h>
 
+/*
 struct fileinfo304 {
 	size_t size;
 	char filename[15];
@@ -16,22 +18,37 @@ struct fileinfo304 {
     int file_id;
 	struct list_head list;
 };
-
+*/
 /**
  * The following defines and initializes a list_head object named files_list
  */
 
+/*
 static LIST_HEAD(files_list);
 int ownerID = 0;
 struct fileinfo304 *ptr;
 struct fileinfo304 *next;
-
 module_param(ownerID,int,0);
+*/
+
+int processID = 0;
+int processPrio = 0;
+module_param(processID,int,0);
+module_param(processPrio,int,0);
+
+struct task_struct *task;
+
 
 int fileinfo304_init(void)
 {
 	printk(KERN_INFO "Loading Module\n");
-	
+	if (processID != 0)
+	{
+		task = pid_task(find_vpid(processID),PIDTYPE_PID);
+		if (task != NULL && task->pid != NULL)
+			printk("Process: PID: %d Name: %s",task->pid,task->comm);
+	}
+	/*
 	// declare fileinfo304
 	struct fileinfo304 *file0;
 	struct fileinfo304 *file1;
@@ -119,13 +136,14 @@ int fileinfo304_init(void)
 		}
 	}
 	printk("Removed Files: # removed: %d # Remaining: %d\n",removedNo,listSize - removedNo);
+    */
     return 0;
 }
 
 void fileinfo304_exit(void)
 {
 	printk(KERN_INFO "Removing Module\n");
-	
+	/*
 	list_for_each_entry_safe(ptr, next, &files_list, list)
 	{
 		// on each iteration ptr points 
@@ -136,9 +154,8 @@ void fileinfo304_exit(void)
 		list_del(&ptr->list);
 		kfree(ptr);
 	}
+	*/
 }
-
-
 
 module_init( fileinfo304_init);
 module_exit( fileinfo304_exit);

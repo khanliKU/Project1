@@ -165,24 +165,55 @@ int main(void)
 //					printf("Bookmarks is full, can't insert.\n");
 	    		}
 	    	}
-	    	else if (strcmp(args[0],"codesearch") == 0)
-	    	{
-	    		if (args[1] != NULL)
-	    		{
-	    			if (strcmp(args[1],"-r") == 0 && args[2] != NULL)
-	    			{
-	    				codeSearch(".",1,args[2]);
-	    			}
-	    			else
-	    			{
-	    				codeSearch(".",0,args[1]);
-	    			}
-	    		}
-	    	}
+			else if (strcmp(args[0],"codesearch") == 0)
+			{
+				if (args[1] != NULL)
+				{
+					if (strcmp(args[1],"-r") == 0 && args[2] != NULL)
+					{
+						codeSearch(".",1,args[2]);
+					}
+					else
+					{
+						codeSearch(".",0,args[1]);
+					}
+				}
+			}
+			else if (strcmp(args[0],"processInfo") == 0)
+			{
+				if (argumentCount > 2)
+				{ // 2337
+					pid = fork();
+					if (pid < 0)
+					{
+						fprintf(stderr, "Fork Failed");
+						return 1;
+					}
+					else if (pid == 0)
+					{
+						char dum1[50] = "processID=";
+						char dum2[50] = "processPrio=";
+						strcat(dum1,args[1]);
+						strcat(dum2,args[2]);
+						args[0] = "/usr/bin/sudo";
+						args[1] = "insmod";
+						args[2] = "processInfo.ko";
+						args[3] = dum1;
+						args[4] = dum2;
+						args[5] = NULL;
+						execv(args[0], args);
+						exit(0);
+					}
+					else
+					{
+						waitpid(pid);
+					}
+				}
+			}
 	    	else
 	    	{
 		    	pid = fork();
-		    	if (pid < 0)
+				if (pid < 0)
 				{
 					fprintf(stderr, "Fork Failed");
 					return 1;
@@ -190,12 +221,12 @@ int main(void)
 				else if (pid == 0)
 				{
 					for (int pathIndex=0;pathIndex<pathLenght;pathIndex++)
-			    	{
-			    		setpgid(0,0);
-			    		memset(path,'\0',sizeof(path));
-			    		strcpy(path,paths[pathIndex]);
-		    			strncat(path,"/",1);
-			    		strncat(path,args[0],MAX_LINE);
+					{
+						setpgid(0,0);
+						memset(path,'\0',sizeof(path));
+						strcpy(path,paths[pathIndex]);
+						strncat(path,"/",1);
+						strncat(path,args[0],MAX_LINE);
 						execv(path, args);
 					}
 					exit(0);
