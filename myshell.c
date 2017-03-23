@@ -229,7 +229,7 @@ int main(void)
 							insertCron(h,m,"/usr/bin/play",args[2]);
 						}
 					}
-/*
+
 					pid = fork();
 					if (pid < 0)
 					{
@@ -244,7 +244,6 @@ int main(void)
 					{
 						waitpid(pid);
 					}
-*/
 				}
 			}
 			else if (strcmp(args[0],"processInfo") == 0)
