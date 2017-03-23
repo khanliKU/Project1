@@ -37,6 +37,9 @@ module_param(processID,int,0);
 module_param(processPrio,int,0);
 
 struct task_struct *task;
+struct task_struct *children;
+struct list_head *list;
+
 
 
 int fileinfo304_init(void)
@@ -46,8 +49,22 @@ int fileinfo304_init(void)
 	{
 		task = pid_task(find_vpid(processID),PIDTYPE_PID);
 		if (task != NULL && task->pid != NULL)
-			printk("Process: PID: %d Name: %s",task->pid,task->comm);
+		{
+			printk("Process: PID: %d Name: %s\n",task->pid,task->comm);
+			if (task->parent != NULL)
+			{
+				printk("Parent: PID: %d Name: %s\n",task->parent->pid,task->parent->comm);
+			}
+			
+			list_for_each(list, &task->children)
+			{
+				children = list_entry(list, struct task_struct, sibling);
+				printk("Children: PID: %d Name: %s\n",children->pid,children->comm);
+				/* task now points to one of current's children */
+			}
+		}
 	}
+
 	/*
 	// declare fileinfo304
 	struct fileinfo304 *file0;

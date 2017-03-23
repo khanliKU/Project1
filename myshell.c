@@ -17,6 +17,7 @@
 #define MAX_PATH_NO		20
 #define MAX_PAT_LENGTH  200
 #define MAX_BOOKMARK	10
+#define MAX_TASK		20
 
 int parseCommand(char inputBuffer[],
 					char *args[],
@@ -27,10 +28,20 @@ void printPATH();
 void codeSearch(const char *name, int isRecursive, const char *searchFor);
 char *trimwhitespace(char *str);
 int removeModule();
+int insertCron(char* hour, char* min, char* exe, char* file);
+int removeCron(char* hour, char* min);
+int printCron();
 
 char* paths[MAX_PATH_NO];
 char* bookmarks[MAX_BOOKMARK] = {NULL};
 int pathLenght;
+
+struct muzik_task
+{
+	char m[3];
+	char h[3];
+	char filePath[MAX_PAT_LENGTH];
+};
 
 int main(void)
 {
@@ -72,6 +83,9 @@ int main(void)
     		pathLenght++;
     	}
    	}
+
+	// get current saved crontabs
+	system("/usr/bin/crontab -l > mycron");
 
 	while (shouldrun)
 	{            		/* Program terminates normally inside setup */
@@ -182,6 +196,57 @@ int main(void)
 					}
 				}
 			}
+			else if (strcmp(args[0],"muzik") == 0)
+			{
+				
+				if (args[1] != NULL)
+				{
+					if (strcmp(args[1],"-l") == 0)
+					{
+						printCron();
+					}
+					else if (strcmp(args[1],"-r") == 0 && args[2] != NULL)
+					{
+						token = strtok(args[2],".");
+						if (token != NULL && strlen(token) < 3)
+						{
+							char m[3];
+							char h[3];
+							j = 0;
+							strcpy(h,token);
+							token = strtok(NULL,".");
+							strcpy(m,token);
+							removeCron(h,m);
+						}
+					}
+					else if (argumentCount > 2)
+					{
+						char *h,*m;
+						h = strtok(args[1],".");
+						if (h != NULL && strlen(h) < 3)
+						{
+							m = strtok(NULL,".");
+							insertCron(h,m,"/usr/bin/play",args[2]);
+						}
+					}
+/*
+					pid = fork();
+					if (pid < 0)
+					{
+						
+					}
+					else if (pid == 0)
+					{
+						char* dum[3] = {"/usr/bin/crontab","./mycron",NULL};
+						execv(dum[0],dum);
+					}
+					else
+					{
+						waitpid(pid);
+					}
+*/
+				}
+			}
 			else if (strcmp(args[0],"processInfo") == 0)
 			{
 				if (argumentCount > 2)
@@ -256,8 +321,10 @@ int main(void)
 			}
 	    }
 	}
-	// TODO remove any added module while exiting
-	removeModule();
+	if (strcmp(currentPID," ") != 0)
+	{
+		removeModule();
+	}
 	return 0;
 }
 
@@ -467,6 +534,81 @@ int removeModule()
 	else
 	{
 		waitpid(pid);
+	}
+	return 0;
+}
+
+int insertCron(char* hour, char* min, char* exe, char* file)
+{
+	FILE *fp1, *fp2;
+	char h[20], m[20], d[20], mo[20], w[20], e[MAX_PAT_LENGTH], f[MAX_PAT_LENGTH];
+	fp1 = fopen("mycron","r");
+	fp2 = fopen("mycronnew","wr+");
+	if (fp1 && fp2)
+	{
+		while(1)
+		{
+			if(fscanf(fp1, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f) == EOF)
+			{
+			 break;
+			}
+			fprintf(fp2, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f);
+		}
+		fprintf(fp2, "%s %s %s %s %s %s %s\n",min, hour, "*", "*", "*", exe, file);
+//		printf("%s %s %s %s\n", min, hour, exe, file);
+		fscanf(fp2, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f);
+//		printf("%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f);
+		fclose(fp1);
+		fclose(fp2);
+		remove("mycron");
+		rename("mycronnew","mycron");
+	}
+	return 0;
+}
+
+int removeCron(char* hour, char* min)
+{
+	FILE *fp1, *fp2;
+	char h[20], m[20], d[20], mo[20], w[20], e[MAX_PAT_LENGTH], f[MAX_PAT_LENGTH];
+	fp1 = fopen("mycron","r");
+	fp2 = fopen("mycronnew","w+");
+	if (fp1 && fp2)
+	{
+		while(1)
+		{
+			if(fscanf(fp1, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f) == EOF)
+			{
+			 break;
+			}
+			if (strcmp(m,min) != 0 || strcmp(h,hour) != 0)
+			{
+				fprintf(fp2, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f);
+			}
+		}
+		fclose(fp1);
+		fclose(fp2);
+		remove("mycron");
+		rename("mycronnew","mycron");
+	}
+	return 0;
+}
+
+int printCron()
+{
+	FILE *fp1;
+	char h[20], m[20], d[20], mo[20], w[20], e[MAX_PAT_LENGTH], f[MAX_PAT_LENGTH];
+	fp1 = fopen("mycron","rw+");
+	if (fp1)
+	{
+		while(1)
+		{
+			if(fscanf(fp1, "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f) == EOF)
+			{
+			 break;
+			}
+			printf( "%s %s %s %s %s %s %s\n",m, h, d, mo, w, e, f);
+		}
+		fclose(fp1);
 	}
 	return 0;
 }
