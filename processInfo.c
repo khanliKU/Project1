@@ -39,8 +39,7 @@ module_param(processPrio,int,0);
 struct task_struct *task;
 struct task_struct *children;
 struct list_head *list;
-
-
+struct task_struct *th;
 
 int fileinfo304_init(void)
 {
@@ -51,6 +50,11 @@ int fileinfo304_init(void)
 		if (task != NULL && task->pid != NULL)
 		{
 			printk("Process: PID: %d Name: %s\n",task->pid,task->comm);
+			printk("User ID: %d\n", task->cred->uid);
+			printk("Priority: %d Static: %d\n", task->prio, task->static_prio);
+			printk("vruntime: %llu\n", task->se.vruntime);
+			printk("# of voluntary context switch count: %lu\n", task->nvcsw);
+			printk("# of involuntary context switch count: %lu\n", task->nivcsw);
 			if (task->parent != NULL)
 			{
 				printk("Parent: PID: %d Name: %s\n",task->parent->pid,task->parent->comm);
@@ -59,9 +63,17 @@ int fileinfo304_init(void)
 			list_for_each(list, &task->children)
 			{
 				children = list_entry(list, struct task_struct, sibling);
-				printk("Children: PID: %d Name: %s\n",children->pid,children->comm);
+				printk("Children: PID: %d \tName: %s\n",children->pid,children->comm);
 				/* task now points to one of current's children */
 			}
+			th = task;
+			do
+			{
+				if (th->pid != task->pid)
+				{
+					printk("Thread Group Member: PID: %d \tName: %s\n", th->pid,th->comm);
+				}
+			} while_each_thread(task,th);
 		}
 	}
 

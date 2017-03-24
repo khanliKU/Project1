@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <sched.h>
 
 #define MAX_LINE       	80 /* 80 chars per line, per command, should be enough. */
 #define MAX_PATH_NO		20
@@ -60,7 +61,7 @@ int main(void)
 	char cwd[MAX_PAT_LENGTH];
 	int argumentCount;
 	int bookmark = -1;
-	char currentPID[10] = " ";
+	int currentPID = -1;
 
 	const char* user = getenv("USER");
 
@@ -198,7 +199,6 @@ int main(void)
 			}
 			else if (strcmp(args[0],"muzik") == 0)
 			{
-				
 				if (args[1] != NULL)
 				{
 					if (strcmp(args[1],"-l") == 0)
@@ -258,14 +258,12 @@ int main(void)
 					}
 					else if (pid == 0)
 					{
-						if (strcmp(currentPID,args[1]) != 0)
+						if (currentPID != atoi(args[1]))
 						{
-							if (strcmp(currentPID," ") != 0)
+							if (currentPID != -1)
 							{
 								removeModule();
 							}
-							memset(currentPID,'\0',sizeof(currentPID));
-							strcpy(currentPID,args[1]);
 							char dum1[50] = "processID=";
 							char dum2[50] = "processPrio=";
 							strcat(dum1,args[1]);
@@ -277,13 +275,13 @@ int main(void)
 							args[4] = dum2;
 							args[5] = NULL;
 							execv(args[0], args);
-							exit(0);
 						}
-						
+						exit(0);
 					}
 					else
 					{
 						waitpid(pid);
+						currentPID = atoi(args[1]);
 					}
 				}
 			}
@@ -320,7 +318,7 @@ int main(void)
 			}
 	    }
 	}
-	if (strcmp(currentPID," ") != 0)
+	if (currentPID != -1)
 	{
 		removeModule();
 	}
@@ -523,7 +521,7 @@ int removeModule()
 	char* args[4] = {"/usr/bin/sudo","rmmod","processInfo",NULL};
 	if (pid < 0)
 	{
-		fprintf(stderr, "Fork Failed");
+		printf("Fork Failed");
 		return 1;
 	}
 	else if (pid == 0)
